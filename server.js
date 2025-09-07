@@ -44,7 +44,7 @@ app.post("/test/start", (req, res) => {
 
   const tasks = Array.from({ length: anzahlAufgaben }, (_, i) => {
     const task = generateTasks(1, operator, klasse)[0];
-    task.id = `t${i + 1}`; // 👉 eindeutige Task-ID setzen
+    task.id = `t${i + 1}`; // eindeutige Task-ID setzen
     return task;
   });
 
@@ -62,9 +62,10 @@ app.post("/test/start", (req, res) => {
     modus,
     timerSek,
     anzahlAufgaben,
-    tasks // 👉 Aufgaben gleich im Response mitsenden
+    tasks // 👉 jetzt die Aufgaben gleich mitliefern
   });
 });
+
 
 
 
