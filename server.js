@@ -42,8 +42,10 @@ app.get("/tasks", (req, res) => {
 app.post("/test/start", (req, res) => {
   const { modus = "Test", timerSek = 300, anzahlAufgaben = 10, klasse = 3, operator = "+" } = req.body;
 
-  const tasks = Array.from({ length: anzahlAufgaben }, () => {
-    return generateTasks(1, operator, klasse)[0];
+  const tasks = Array.from({ length: anzahlAufgaben }, (_, i) => {
+    const task = generateTasks(1, operator, klasse)[0];
+    task.id = `t${i + 1}`; // 👉 eindeutige Task-ID setzen
+    return task;
   });
 
   const sessionId = "s" + Date.now();
@@ -59,9 +61,11 @@ app.post("/test/start", (req, res) => {
     sessionId,
     modus,
     timerSek,
-    anzahlAufgaben
+    anzahlAufgaben,
+    tasks // 👉 Aufgaben gleich im Response mitsenden
   });
 });
+
 
 
 // 2️⃣ Antwort prüfen
