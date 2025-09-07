@@ -1,0 +1,128 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Optional
+import random, json, os
+
+app = FastAPI(title="Zahlen-Pirat Backend")
+
+DB_FILE = "scores.json"
+
+# Hilfsfunktionen für Scores
+def load_scores():
+    if not os.path.exists(DB_FILE):
+        return []
+    with open(DB_FILE, "r") as f:
+        return json.load(f)
+
+def save_scores(scores):
+    with open(DB_FILE, "w") as f:
+        json.dump(scores, f, indent=2)
+
+# -----------------------------
+# Modelle
+# -----------------------------
+class Task(BaseModel):
+    id: str
+    frage: str
+    korrekteLoesung: str
+    operator: str
+
+class TaskRequest(BaseModel):
+    operatoren: List[str]
+    limit: int = 10
+
+class AnswerRequest(BaseModel):
+    sessionId: str
+    taskId: str
+    antwort: str
+    dauerSek: int
+    korrekteLoesung: str
+
+class SaveRequest(BaseModel):
+    spieler: str
+    punkte: int
+    klasse: Optional[int] = None
+    modus: Optional[str] = None
+
+class StartRequest(BaseModel):
+    modus: Optional[str] = "Test"
+    timerSek: Optional[int] = 300   # Standard: 5 Minuten
+    anzahlAufgaben: Optional[int] = 10
+
+# -----------------------------
+# Endpoints
+# -----------------------------
+
+# Healthcheck
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# Spiel starten
+@app.post("/test/start")
+def start_test(req: StartRequest):
+    return {
+        "sessionId": "s1",   # später evtl. UUID verwenden
+        "modus": req.modus,
+        "timerSek": req.timerSek,
+        "anzahlAufgaben": req.anzahlAufgaben
+    }
+
+# Aufgaben erzeugen
+@app.post("/get/tasks")
+def get_tasks(req: TaskRequest):
+    operatoren = req.operatoren
+    limit = req.limit
+    tasks = []
+    for i in range(limit):
+        a, b = random.randint(1, 10), random.randint(1, 10)
+        if "+" in operatoren:
+            frage, loesung, op = f"{a} + {b}", str(a + b), "+"
+        elif "-" in operatoren:
+            frage, loesung, op = f"{a} - {b}", str(a - b), "-"
+        elif "×" in operatoren:
+            frage, loesung, op = f"{a} × {b}", str(a * b), "×"
+        elif "÷" in operatoren and b != 0:
+            frage, loesung, op = f"{a} ÷ {b}", str(a // b), "÷"
+        else:
+            continue
+        tasks.append(Task(id=str(i+1), frage=frage, korrekteLoesung=loesung, operator=op))
+    return tasks
+
+# Antwort prüfen
+@app.post("/test/answer")
+def post_answer(req: AnswerRequest):
+    korrekt = req.antwort == req.korrekteLoesung
+    return {
+        "korrekt": korrekt,
+        "korrekteLoesung": req.korrekteLoesung,
+        "erklaerung": f"Die richtige Lösung war {req.korrekteLoesung}.",
+        "punkteDelta": 10 if korrekt else -5,
+        "gesamtpunkte": 10 if korrekt else 0
+    }
+
+# Punkte speichern
+@app.post("/save")
+def save_score(req: SaveRequest):
+    scores = load_scores()
+    scores.append(req.dict())
+    save_scores(scores)
+    return {"status": "saved"}
+
+# Punkte laden
+@app.get("/load")
+def load_score(spieler: str):
+    scores = load_scores()
+    for s in scores:
+        if s["spieler"] == spieler:
+            return s
+    return {"error": "not found"}
+
+# Rangliste
+@app.get("/leaderboard")
+def leaderboard():
+    scores = load_scores()
+    sorted_scores = sorted(scores, key=lambda x: x["punkte"], reverse=True)
+    for idx, s in enumerate(sorted_scores, start=1):
+        s["rang"] = idx
+    return sorted_scores
