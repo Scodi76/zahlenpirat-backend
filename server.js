@@ -69,9 +69,9 @@ app.post("/test/start", (req, res) => {
 
 
 
-// 2️⃣ Antwort prüfen
+// 2️⃣ Antwort prüfen + Fortschritt speichern
 app.post("/test/answer", (req, res) => {
-  const { sessionId, taskId, antwort, dauerSek = 0 } = req.body;
+  const { sessionId, taskId, antwort, spieler = "Unbekannt", dauerSek = 0 } = req.body;
   const session = sessions[sessionId];
 
   if (!session) {
@@ -86,6 +86,16 @@ app.post("/test/answer", (req, res) => {
   const korrekt = antwort == task.korrekteLoesung;
   if (korrekt) session.punkte += 10;
 
+  // Fortschritt speichern (automatisch nach jeder Antwort)
+  scores[spieler] = {
+    spieler,
+    punkte: session.punkte,
+    klasse: task.metadaten?.klasse || 3,
+    modus: session.modus,
+    datum: new Date().toISOString()
+  };
+  fs.writeFileSync(SCORE_FILE, JSON.stringify(scores, null, 2));
+
   res.json({
     korrekt,
     korrekteLoesung: task.korrekteLoesung,
@@ -94,6 +104,7 @@ app.post("/test/answer", (req, res) => {
     gesamtpunkte: session.punkte
   });
 });
+
 
 // 3️⃣ Punkte speichern
 app.post("/save", (req, res) => {
