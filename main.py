@@ -136,26 +136,30 @@ def post_answer(req: AnswerRequest):
     }
 
 
-# Punkte speichern (nur im RAM)
+# Punkte speichern (dauerhaft in scores.json)
 @app.post("/save")
 def save_score(req: SaveRequest):
+    scores = load_scores()
     entry = req.dict()
     entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    scores_memory.append(entry)   # ✅ im RAM speichern
+    scores.append(entry)   # ✅ in Datei-Liste einfügen
+    save_scores(scores)    # ✅ in scores.json schreiben
     return {"message": "Saved", "score": entry}
 
 
-# Punkte laden (nur im RAM)
+# Punkte laden (dauerhaft aus scores.json)
 @app.get("/load")
 def load_scores_for_player(spieler: str):
-    matching_scores = [s for s in scores_memory if s["spieler"] == spieler]
+    scores = load_scores()
+    matching_scores = [s for s in scores if s["spieler"].lower() == spieler.lower()]
     return matching_scores[-20:] if matching_scores else []
 
 
-# Rangliste (nur im RAM)
+# Rangliste (dauerhaft aus scores.json)
 @app.get("/leaderboard")
 def leaderboard():
-    sorted_scores = sorted(scores_memory, key=lambda x: x["punkte"], reverse=True)
+    scores = load_scores()
+    sorted_scores = sorted(scores, key=lambda x: x["punkte"], reverse=True)
     for idx, s in enumerate(sorted_scores, start=1):
         s["rang"] = idx
     return sorted_scores
