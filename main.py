@@ -50,14 +50,14 @@ from pydantic import BaseModel
 class SaveRequest(BaseModel):
     spieler: str
     punkte: int
-    klasse: Optional[int] = None
-    modus: Optional[str] = None
-    operatoren: Optional[List[str]] = None
-    schwierigkeit: Optional[str] = None
-    zahlenauswahl: Optional[str] = None
-    kategorie: Optional[int] = None
-    dauer: Optional[str] = None
-    autosave: Optional[bool] = None
+    klasse: Optional[int] = 0
+    modus: Optional[str] = "Test"
+    operatoren: Optional[List[str]] = []
+    schwierigkeit: Optional[str] = "Einfach"
+    zahlenauswahl: Optional[str] = "1-20"
+    kategorie: Optional[int] = 1
+    dauer: Optional[str] = "-"
+    autosave: Optional[bool] = True
 
 
 
