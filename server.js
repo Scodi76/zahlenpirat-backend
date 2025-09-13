@@ -181,23 +181,28 @@ app.get("/load", (req, res) => {
 app.get("/leaderboard", (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
 
-const leaderboard = Object.entries(scores).map(([spieler, eintraege]) => {
-  const maxPunkte = Math.max(...eintraege.map(e => e.punkte));
-  return {
-    spieler,
-    punkte: maxPunkte,
-    letzterStand: eintraege[eintraege.length - 1]
-  };
-});
+  const leaderboard = Object.entries(scores).map(([spieler, eintraege]) => {
+    // Fallback: sicherstellen, dass es ein Array ist
+    const arr = Array.isArray(eintraege) ? eintraege : [eintraege];
 
-const sorted = leaderboard
-  .sort((a, b) => b.punkte - a.punkte)
-  .slice(0, limit)
-  .map((s, i) => ({ ...s, rang: i + 1 }));
+    // Max-Punkte bestimmen
+    const maxPunkte = Math.max(...arr.map(e => e.punkte || 0));
 
+    return {
+      spieler,
+      punkte: maxPunkte,
+      letzterStand: arr[arr.length - 1] // den letzten Eintrag speichern
+    };
+  });
+
+  const sorted = leaderboard
+    .sort((a, b) => b.punkte - a.punkte) // nach Punkten sortieren
+    .slice(0, limit)                     // Limit anwenden
+    .map((s, i) => ({ ...s, rang: i + 1 }));
 
   res.json(sorted);
 });
+
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
