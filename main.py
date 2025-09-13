@@ -4,6 +4,7 @@ from typing import List, Optional
 import random, json, os
 from datetime import datetime
 from connector_routes import router as connector_router
+scores_memory = []
 
 app = FastAPI(title="Zahlen-Pirat Backend")
 app.include_router(connector_router)
@@ -135,35 +136,26 @@ def post_answer(req: AnswerRequest):
     }
 
 
-# Punkte speichern
-
+# Punkte speichern (nur im RAM)
 @app.post("/save")
 def save_score(req: SaveRequest):
-    scores = load_scores()
     entry = req.dict()
     entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    scores.append(entry)
-    save_scores(scores)
+    scores_memory.append(entry)   # ✅ im RAM speichern
     return {"message": "Saved", "score": entry}
 
 
-
-# Punkte laden
+# Punkte laden (nur im RAM)
 @app.get("/load")
 def load_scores_for_player(spieler: str):
-    scores = load_scores()
-    matching_scores = [s for s in scores if s["spieler"] == spieler]
-
-    # Nur die letzten 20 anzeigen – du kannst hier auch sortieren, z. B. nach Zeit
-    return matching_scores[-20:]
+    matching_scores = [s for s in scores_memory if s["spieler"] == spieler]
+    return matching_scores[-20:] if matching_scores else []
 
 
-
-# Rangliste
+# Rangliste (nur im RAM)
 @app.get("/leaderboard")
 def leaderboard():
-    scores = load_scores()
-    sorted_scores = sorted(scores, key=lambda x: x["punkte"], reverse=True)
+    sorted_scores = sorted(scores_memory, key=lambda x: x["punkte"], reverse=True)
     for idx, s in enumerate(sorted_scores, start=1):
         s["rang"] = idx
     return sorted_scores
