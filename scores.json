@@ -1,1 +1,22 @@
-[]
+{
+  "Max": {
+    "spieler": "Max",
+    "punkte": 200,
+    "klasse": 4,
+    "modus": "Test",
+    "operatoren": [
+      "+"
+    ],
+    "schwierigkeit": "Mittel",
+    "zahlenauswahl": "1-100",
+    "kategorie": 2,
+    "datum": "2025-09-11T06:36:23.981Z"
+  },
+  "Mark": {
+    "spieler": "Mark",
+    "punkte": 12,
+    "klasse": 3,
+    "modus": "Test",
+    "datum": "2025-09-10T22:21:24.248Z"
+  }
+}

@@ -1,0 +1,822 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Zahlen-Zauber API",
+    "version": "1.0.2",
+    "description": "Backend für Aufgaben, Tests, Punkte und Ergebnisse im Zahlen-Zauber."
+  },
+  "servers": [
+    {
+      "url": "https://zahlenpirat-backend.onrender.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Optionaler API-Key für geschützte Endpunkte."
+      }
+    },
+    "schemas": {
+      "Operator": {
+        "type": "string",
+        "enum": [
+          "+",
+          "-",
+          "×",
+          "÷"
+        ]
+      },
+      "Difficulty": {
+        "type": "string",
+        "enum": [
+          "Einfach",
+          "Mittel",
+          "Schwer",
+          "Extrem schwer",
+          "Unlösbar"
+        ]
+      },
+      "CategoryId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5
+      },
+      "Task": {
+        "type": "object",
+        "required": [
+          "id",
+          "frage",
+          "wahlAntworten",
+          "typ"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "typ": {
+            "type": "string",
+            "enum": [
+              "rechnung",
+              "kacheln",
+              "text",
+              "bild",
+              "paradox"
+            ]
+          },
+          "frage": {
+            "type": "string",
+            "description": "Aufgaben-Text oder Beschreibung"
+          },
+          "bildUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "wahlAntworten": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "freieAntwort": {
+            "type": "boolean",
+            "default": false
+          },
+          "metadaten": {
+            "type": "object",
+            "properties": {
+              "klasse": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "operatoren": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Operator"
+                }
+              },
+              "kategorie": {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              "schwierigkeit": {
+                "$ref": "#/components/schemas/Difficulty"
+              }
+            }
+          }
+        }
+      },
+      "AnswerRequest": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "taskId"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "antwort": {
+            "type": "string",
+            "description": "Freitext oder A/B/C/D"
+          },
+          "dauerSek": {
+            "type": "number"
+          }
+        }
+      },
+      "AnswerResult": {
+        "type": "object",
+        "required": [
+          "korrekt",
+          "korrekteLoesung"
+        ],
+        "properties": {
+          "korrekt": {
+            "type": "boolean"
+          },
+          "korrekteLoesung": {
+            "type": "string"
+          },
+          "erklaerung": {
+            "type": "string"
+          },
+          "punkteDelta": {
+            "type": "integer"
+          },
+          "gesamtpunkte": {
+            "type": "integer"
+          }
+        }
+      },
+      "TestSession": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "modus",
+          "timerSek",
+          "anzahlAufgaben"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "modus": {
+            "type": "string",
+            "enum": [
+              "Test",
+              "Ueben",
+              "Lernen",
+              "Spiele"
+            ]
+          },
+          "timerSek": {
+            "type": "integer"
+          },
+          "anzahlAufgaben": {
+            "type": "integer"
+          }
+        }
+      },
+      "SaveRequest": {
+        "type": "object",
+        "required": [
+          "spieler",
+          "punkte"
+        ],
+        "properties": {
+          "spieler": {
+            "type": "string"
+          },
+          "punkte": {
+            "type": "integer"
+          },
+          "klasse": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "modus": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Score": {
+        "type": "object",
+        "properties": {
+          "spieler": {
+            "type": "string"
+          },
+          "punkte": {
+            "type": "integer"
+          },
+          "rang": {
+            "type": "integer"
+          },
+          "datum": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultJson": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "summary"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object",
+            "required": [
+              "aufgaben",
+              "richtig",
+              "falsch",
+              "gesamtpunkte"
+            ],
+            "properties": {
+              "aufgaben": {
+                "type": "integer"
+              },
+              "richtig": {
+                "type": "integer"
+              },
+              "falsch": {
+                "type": "integer"
+              },
+              "gesamtpunkte": {
+                "type": "integer"
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dauerSek": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "taskId",
+                "korrekt"
+              ],
+              "properties": {
+                "taskId": {
+                  "type": "string"
+                },
+                "frage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "korrekt": {
+                  "type": "boolean"
+                },
+                "antwort": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "loesung": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "dauerSek": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "punkte": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fileUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Gesundheitscheck",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "examples": {
+                  "ok": {
+                    "summary": "OK",
+                    "value": "OK"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "getTasks",
+        "summary": "Aufgaben abrufen (Batch)",
+        "parameters": [
+          {
+            "name": "kategorie",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          },
+          {
+            "name": "schwierigkeit",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Difficulty"
+            }
+          },
+          {
+            "name": "klasse",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            }
+          },
+          {
+            "name": "operator",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "+,-,×,÷"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste von Aufgaben",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Beispielaufgabe",
+                    "value": [
+                      {
+                        "id": "t1",
+                        "typ": "rechnung",
+                        "frage": "7 × 6 = ?",
+                        "wahlAntworten": [
+                          "A) 42",
+                          "B) 36",
+                          "C) 48",
+                          "D) 40"
+                        ],
+                        "freieAntwort": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/start": {
+      "post": {
+        "operationId": "startTestSession",
+        "summary": "Neue Sitzung starten (z. B. 10 Aufgaben / 5 Minuten)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "modus": {
+                    "type": "string",
+                    "enum": [
+                      "Test",
+                      "Ueben",
+                      "Lernen",
+                      "Spiele"
+                    ],
+                    "default": "Test"
+                  },
+                  "timerSek": {
+                    "type": "integer",
+                    "default": 300
+                  },
+                  "anzahlAufgaben": {
+                    "type": "integer",
+                    "default": 10
+                  },
+                  "kategorie": {
+                    "$ref": "#/components/schemas/CategoryId"
+                  },
+                  "schwierigkeit": {
+                    "$ref": "#/components/schemas/Difficulty"
+                  },
+                  "klasse": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "operatoren": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Operator"
+                    }
+                  },
+                  "multiplayer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "Miteinander",
+                      "Gegeneinander",
+                      null
+                    ]
+                  },
+                  "spieler": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "modus": "Test",
+                    "timerSek": 300,
+                    "anzahlAufgaben": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sitzung erstellt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSession"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "sessionId": "s1",
+                      "modus": "Test",
+                      "timerSek": 300,
+                      "anzahlAufgaben": 10
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/answer": {
+      "post": {
+        "operationId": "postAnswer",
+        "summary": "Antwort übermitteln & auswerten",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auswertung",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnswerResult"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "korrekt": true,
+                      "korrekteLoesung": "42",
+                      "erklaerung": "7 × 6 ergibt 42.",
+                      "punkteDelta": 10,
+                      "gesamtpunkte": 10
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/save": {
+      "post": {
+        "operationId": "postSave",
+        "summary": "Punkte/Stand speichern",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gespeichert",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "default": {
+                    "value": {
+                      "status": "saved"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/load": {
+      "get": {
+        "operationId": "getLoad",
+        "summary": "Punktestand laden",
+        "parameters": [
+          {
+            "name": "spieler",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aktueller Stand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "spieler": "Fynn",
+                      "punkte": 120,
+                      "rang": 2,
+                      "datum": "2025-09-05T00:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nicht gefunden"
+          }
+        }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "operationId": "getLeaderboard",
+        "summary": "Topliste",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "modus",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "klasse",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste von Scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Score"
+                  }
+                },
+                "examples": {
+                  "default": {
+                    "value": [
+                      {
+                        "spieler": "Fynn",
+                        "punkte": 120,
+                        "rang": 1,
+                        "datum": "2025-09-05T00:00:00Z"
+                      },
+                      {
+                        "spieler": "Lina",
+                        "punkte": 100,
+                        "rang": 2,
+                        "datum": "2025-09-04T00:00:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/download/result": {
+      "get": {
+        "operationId": "getDownloadResult",
+        "summary": "Ergebnisdatei herunterladen (z. B. PDF)",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pdf",
+                "json"
+              ],
+              "default": "pdf"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dateiinhalt",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultJson"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "sessionId": "s1",
+                      "summary": {
+                        "aufgaben": 10,
+                        "richtig": 9,
+                        "falsch": 1,
+                        "gesamtpunkte": 90,
+                        "note": "Sehr gut",
+                        "dauerSek": 280
+                      },
+                      "details": [
+                        {
+                          "taskId": "t1",
+                          "frage": "7×6=?",
+                          "korrekt": true,
+                          "antwort": "42",
+                          "loesung": "42",
+                          "dauerSek": 5,
+                          "punkte": 10
+                        }
+                      ],
+                      "generatedAt": "2025-09-05T00:00:00Z",
+                      "fileUrl": "https://example.com/result.pdf"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-privacyPolicyUrl": "https://app.example.com/privacy"
+}

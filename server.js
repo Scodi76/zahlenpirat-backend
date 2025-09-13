@@ -40,7 +40,13 @@ app.get("/tasks", (req, res) => {
 
 // 1️⃣ Session starten
 app.post("/test/start", (req, res) => {
-  const { modus = "Test", timerSek = 300, anzahlAufgaben = 10, klasse = 3, operator = "+" } = req.body;
+  const {
+    modus = "Test",
+    timerSek = 300,
+    anzahlAufgaben = 10,
+    klasse = 3,
+    operator = "+"
+  } = req.body || {};
 
   const tasks = Array.from({ length: anzahlAufgaben }, (_, i) => {
     const task = generateTasks(1, operator, klasse)[0];
@@ -52,6 +58,8 @@ app.post("/test/start", (req, res) => {
   sessions[sessionId] = {
     modus,
     timerSek,
+    klasse,
+    operator,
     tasks,
     aktuelleNummer: 0,
     punkte: 0
@@ -62,18 +70,23 @@ app.post("/test/start", (req, res) => {
     modus,
     timerSek,
     anzahlAufgaben,
-    tasks // 👉 jetzt die Aufgaben gleich mitliefern
+    tasks // 👉 Aufgaben gleich mitliefern
   });
 });
 
 
-
-
 // 2️⃣ Antwort prüfen + Fortschritt speichern
 app.post("/test/answer", (req, res) => {
-  const { sessionId, taskId, antwort, spieler = "Unbekannt", dauerSek = 0 } = req.body;
-  const session = sessions[sessionId];
+  const {
+    sessionId,
+    taskId,
+    antwort,
+    spieler,
+    anonym = false,
+    dauerSek = 0
+  } = req.body;
 
+  const session = sessions[sessionId];
   if (!session) {
     return res.status(404).json({ message: "Session not found" });
   }
@@ -83,19 +96,31 @@ app.post("/test/answer", (req, res) => {
     return res.status(404).json({ message: "Task not found" });
   }
 
+  // Antwort prüfen
   const korrekt = antwort == task.korrekteLoesung;
   if (korrekt) session.punkte += 10;
 
-  // Fortschritt speichern (automatisch nach jeder Antwort)
-  scores[spieler] = {
-    spieler,
-    punkte: session.punkte,
-    klasse: task.metadaten?.klasse || 3,
+  // Spielername oder "Anonymer Matrose"
+  const name = (spieler && String(spieler).trim()) || (anonym ? "Anonymer Matrose" : "Unbekannt");
+
+  // Neuen Session-Eintrag erzeugen
+  const entry = {
+    sessionId,
     modus: session.modus,
+    klasse: task.metadaten?.klasse || session.klasse || 3,
+    punkte: session.punkte,
+    status: "laufend",
     datum: new Date().toISOString()
   };
+
+  // In Scores einfügen (History)
+ if (!scores[name]) scores[name] = [];
+scores[name].push(entry);
+
+  // Persistieren
   fs.writeFileSync(SCORE_FILE, JSON.stringify(scores, null, 2));
 
+  // Antwort zurückgeben
   res.json({
     korrekt,
     korrekteLoesung: task.korrekteLoesung,
@@ -113,19 +138,31 @@ app.post("/save", (req, res) => {
     return res.status(400).json({ message: "Spielername fehlt" });
   }
 
-  // Speichern im Speicher
-  scores[spieler] = {
+  // Falls Spieler noch nicht existiert → Array anlegen
+  if (!scores[spieler]) scores[spieler] = [];
+
+  // Neuen Spielstand-Eintrag bauen
+  const entry = {
     spieler,
     punkte,
     klasse,
     modus,
+    operatoren: req.body.operatoren || ["+"],
+    schwierigkeit: req.body.schwierigkeit || "Einfach",
+    zahlenauswahl: req.body.zahlenauswahl || "1-10",
+    kategorie: req.body.kategorie || 1,
+    dauer: req.body.dauer || "–",
+    autosave: req.body.autosave || false,
     datum: new Date().toISOString()
   };
 
-  // Persistieren in Datei
+  // An Liste anhängen
+  scores[spieler].push(entry);
+
+  // Persistieren
   fs.writeFileSync(SCORE_FILE, JSON.stringify(scores, null, 2));
 
-  res.json({ status: "saved" });
+  res.json({ status: "saved", data: entry });
 });
 
 // 4️⃣ Punktestand laden
@@ -134,22 +171,36 @@ app.get("/load", (req, res) => {
   if (!spieler || !scores[spieler]) {
     return res.status(404).json({ message: "Spieler nicht gefunden" });
   }
+
+  // Liste zurückgeben (alle Spielstände dieses Spielers)
   res.json(scores[spieler]);
 });
+
 
 // 5️⃣ Leaderboard
 app.get("/leaderboard", (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
 
-  const sorted = Object.values(scores)
-    .sort((a, b) => b.punkte - a.punkte)
-    .slice(0, limit)
-    .map((s, i) => ({
-      ...s,
-      rang: i + 1
-    }));
+const leaderboard = Object.entries(scores).map(([spieler, eintraege]) => {
+  const maxPunkte = Math.max(...eintraege.map(e => e.punkte));
+  return {
+    spieler,
+    punkte: maxPunkte,
+    letzterStand: eintraege[eintraege.length - 1]
+  };
+});
+
+const sorted = leaderboard
+  .sort((a, b) => b.punkte - a.punkte)
+  .slice(0, limit)
+  .map((s, i) => ({ ...s, rang: i + 1 }));
+
 
   res.json(sorted);
+});
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
 });
 
 const PORT = process.env.PORT || 3000;

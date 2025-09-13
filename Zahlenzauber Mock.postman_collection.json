@@ -1,0 +1,317 @@
+{
+	"info": {
+		"_postman_id": "0041122c-6994-4c4e-9e3f-c1b214aee181",
+		"name": "Zahlenzauber Mock",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48210567",
+		"_collection_link": "https://mark-nolden-5808732.postman.co/workspace/a8120079-4cd9-4d7a-8768-101b0877ef31/collection/48210567-0041122c-6994-4c4e-9e3f-c1b214aee181?action=share&source=collection_link&creator=48210567"
+	},
+	"item": [
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "GET /tasks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "/tasks",
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "GET /tasks",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "/tasks",
+							"path": [
+								"tasks"
+							]
+						}
+					},
+					"code": 200,
+					"_postman_previewlanguage": "",
+					"header": [],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "[\r\n  {\r\n    \"id\": \"t1\",\r\n    \"typ\": \"rechnung\",\r\n    \"frage\": \"7 × 6 = ?\",\r\n    \"wahlAntworten\": [\"A) 42\", \"B) 36\", \"C) 48\", \"D) 40\"],\r\n    \"freieAntwort\": false\r\n  }\r\n]\r\n"
+				}
+			]
+		},
+		{
+			"name": "POST /save",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "POST /save",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "/save",
+					"path": [
+						"save"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "POST /save",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "/save",
+							"path": [
+								"save"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "",
+					"header": [
+						{
+							"key": "Content-Type: application/json",
+							"value": "",
+							"description": "",
+							"type": "text"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "{ \"status\": \"saved\" }\r\n"
+				}
+			]
+		},
+		{
+			"name": "POST /test/start",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://0ae2fb27-574a-475a-b8cf-fd48c63fa11c.mock.pstmn.io/test/start",
+					"protocol": "https",
+					"host": [
+						"0ae2fb27-574a-475a-b8cf-fd48c63fa11c",
+						"mock",
+						"pstmn",
+						"io"
+					],
+					"path": [
+						"test",
+						"start"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "POST /test/start",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://0ae2fb27-574a-475a-b8cf-fd48c63fa11c.mock.pstmn.io/test/start",
+							"protocol": "https",
+							"host": [
+								"0ae2fb27-574a-475a-b8cf-fd48c63fa11c",
+								"mock",
+								"pstmn",
+								"io"
+							],
+							"path": [
+								"test",
+								"start"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "",
+					"header": [
+						{
+							"key": "Content-Type: application/json",
+							"value": "",
+							"description": "",
+							"type": "text"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "{\r\n  \"sessionId\": \"s1\",\r\n  \"modus\": \"Test\",\r\n  \"timerSek\": 300,\r\n  \"anzahlAufgaben\": 10\r\n}\r\n"
+				}
+			]
+		},
+		{
+			"name": "/test/answer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-mock-response-name",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"sessionId\": \"s1\",\r\n  \"taskId\": \"t1\",\r\n  \"antwort\": \"A\",\r\n  \"dauerSek\": 5\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://0ae2fb27-574a-475a-b8cf-fd48c63fa11c.mock.pstmn.io/test/answer",
+					"protocol": "https",
+					"host": [
+						"0ae2fb27-574a-475a-b8cf-fd48c63fa11c",
+						"mock",
+						"pstmn",
+						"io"
+					],
+					"path": [
+						"test",
+						"answer"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "/test/answer",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sessionId\": \"s1\",\r\n  \"taskId\": \"t1\",\r\n  \"antwort\": \"A\",\r\n  \"dauerSek\": 5\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://0ae2fb27-574a-475a-b8cf-fd48c63fa11c.mock.pstmn.io/test/answer",
+							"protocol": "https",
+							"host": [
+								"0ae2fb27-574a-475a-b8cf-fd48c63fa11c",
+								"mock",
+								"pstmn",
+								"io"
+							],
+							"path": [
+								"test",
+								"answer"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"name": "Content-Type",
+							"description": "",
+							"type": "text"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "{\n    \"korrekt\": true,\n    \"korrekteLoesung\": \"42\",\n    \"erklaerung\": \"7 × 6 = 42, weil 7 sechsmal addiert genau 42 ergibt.\",\n    \"punkteDelta\": 10,\n    \"gesamtpunkte\": 10\n}"
+				},
+				{
+					"name": "/test/answer",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sessionId\": \"s1\",\r\n  \"taskId\": \"t1\",\r\n  \"antwort\": \"A\",\r\n  \"dauerSek\": 5\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://0ae2fb27-574a-475a-b8cf-fd48c63fa11c.mock.pstmn.io/test/answer",
+							"protocol": "https",
+							"host": [
+								"0ae2fb27-574a-475a-b8cf-fd48c63fa11c",
+								"mock",
+								"pstmn",
+								"io"
+							],
+							"path": [
+								"test",
+								"answer"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"name": "Content-Type",
+							"description": "",
+							"type": "text"
+						}
+					],
+					"cookie": [
+						{
+							"expires": "Invalid Date",
+							"domain": "",
+							"path": ""
+						}
+					],
+					"body": "{\r\n  \"korrekt\": false,\r\n  \"korrekteLoesung\": \"42\",\r\n  \"erklaerung\": \"7 × 6 = 42. Die Kanone hat diesmal ihr Ziel verfehl.\",\r\n  \"punkteDelta\": -5,\r\n  \"gesamtpunkte\": 0\r\n}\r\n"
+				}
+			]
+		}
+	]
+}

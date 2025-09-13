@@ -1,0 +1,474 @@
+📜 Handlungsanleitung – Punkte dauerhaft speichern & laden
+1. Überblick
+
+Dein Zahlen-Pirat nutzt aktuell ein Rollen-Skript (ROLLE (Zahlen-Zauber v22/29)) und das Backend (zahlenpirat_backend_onrender_com__jit_plugin).
+Im Rollen-Skript sind Standards (Klasse, Operatoren, Schwierigkeit …) schon vorgesehen, aber Punkte werden nur während einer Session gezählt.
+Damit Punkte dauerhaft online gespeichert und beim neuen Gespräch wieder angezeigt werden können, musst du die Backend-Befehle postSave und getLoad einbauen.
+
+2. Wichtige Backend-Funktionen
+a) Punkte speichern
+postSave({
+  spieler: "Mark",
+  punkte: 100,
+  klasse: 1,
+  modus: "Test"
+})
+
+
+spieler: Name des Spielers (z. B. „Mark“)
+
+punkte: aktuelle Gesamtpunkte
+
+klasse: Klassenstufe (1–6)
+
+modus: „Test“, „Üben“, „Lernen“, „Spiele“
+
+→ Ergebnis: Punkte werden dauerhaft im Online-System gespeichert.
+
+b) Punkte laden
+getLoad({
+  spieler: "Mark"
+})
+
+
+Antwort-Beispiel:
+
+{
+  "spieler": "Mark",
+  "punkte": 100,
+  "rang": 5,
+  "datum": "2025-09-11"
+}
+
+
+→ Zeigt Punkte, Rang und Datum des letzten Speicherns.
+
+c) Rangliste (optional)
+getLeaderboard({
+  limit: 10,
+  modus: "Test",
+  klasse: 1
+})
+
+
+→ Gibt die besten Spieler zurück (Topliste).
+
+3. Anpassung im Rollen-Skript
+a) Nach Prüfungs-Ende
+
+Am Ende der Prüfung („Prüfung beendet!“-Block) zusätzlich:
+
+postSave({
+  spieler: aktuellerName,
+  punkte: gesamtpunkte,
+  klasse: aktuelleKlasse,
+  modus: "Test"
+})
+
+b) Beim „Erinnerung“ → „Letzten Spielstand laden“
+
+Zusätzlich zu den Standards:
+
+const gespeichertePunkte = getLoad({ spieler: aktuellerName });
+
+Ausgabe:
+⚓ Aye, Mark – dein letzter Spielstand wird geladen...
+
+🔧 Geladene Standards:
+• Operatoren: „+“
+• Modus: „Test“
+• Klasse: „1“
+• Schwierigkeit: „Einfach“
+• Zahlenauswahl: „–“
+
+🏆 Gesamtpunkte: 100
+📅 Letztes Spiel: 11.09.2025
+
+c) Neuer Trigger „Punkte“
+
+Wenn Spieler „Punkte“ eingibt:
+
+const daten = getLoad({ spieler: aktuellerName });
+
+Ausgabe:
+🏴‍☠️ Punkte-Übersicht für Mark:
+• Gesamtpunkte: 100
+• Rang: 5
+• Letztes Spiel: 11.09.2025
+
+4. Dateien & Struktur
+
+Rollen-Skript (ROLLE (Zahlen-Zauber v29 PIRATEN-EDITION)):
+
+Stelle im Abschnitt „Prüfung beendet“ die Speicherung mit postSave ein.
+
+Erweitere im Abschnitt „Erinnerung“ / „Laden“ die Ausgabe um getLoad.
+
+Ergänze den Trigger „Punkte“ mit einem Aufruf von getLoad.
+
+Backend (zahlenpirat_backend_onrender_com__jit_plugin):
+
+Enthält alle nötigen Endpunkte (postSave, getLoad, getLeaderboard).
+
+Keine zusätzliche Datei nötig, nur Integration ins Skript.
+
+5. Ablauf für den Spieler
+
+Spieler beendet Prüfung → Punkte werden automatisch gespeichert.
+
+Spieler startet ein neues Gespräch → bei „Erinnerung“ → „Letzten Spielstand laden“ erscheinen Standards + Punkte.
+
+Jederzeit kann er mit „Punkte“ seinen Stand und Rang ansehen.
+
+⚓ Fertig!
+Mit dieser Erweiterung hast du eine echte Online-Punktespeicherung – egal ob der Spieler das Spiel später fortsetzt oder ein neues Gespräch startet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+📜 Handlungsanleitung – Systemeinstellungen für alle Connektoren
+1. Problemstellung
+
+Bisher funktioniert dein Rollen-Skript so:
+
+Jeder Connektor (Operator, Klasse, Schwierigkeit, Modus, Zahlenauswahl) löst einzeln den Merk-Dialog aus.
+
+Der Spieler muss bei jedem Connektor wählen:
+
+1️⃣ Nur dieses Mal
+
+2️⃣ Für dieses Gespräch merken
+
+3️⃣ Immer zulassen (Standard setzen)
+
+Auch wenn man bereits „Für dieses Gespräch merken“ gewählt hat, wird bei jeder neuen Eingabe wieder gefragt → unnötige Wiederholungen.
+
+2. Ziel
+
+Spieler soll nur am Anfang alles einmal einstellen können.
+
+Alle Connektoren (Klasse, Schwierigkeit, Operatoren, Modus, Zahlenauswahl) werden direkt hintereinander abgefragt.
+
+Danach gibt es eine Gesamtbestätigung:
+
+„Nur für dieses Gespräch merken“ (Sitzungs-Standard)
+
+„Immer zulassen“ (persistenter Standard, wird beim nächsten Chat geladen).
+
+Während des Spiels tauchen keine Connektoranfragen mehr auf.
+
+Damit ist der Ablauf klarer, schneller und weniger unterbrechend.
+
+3. Grundlagen
+
+Rollen-Skript: ROLLE (Zahlen-Zauber v29 PIRATEN-EDITION)
+
+Backend: zahlenpirat_backend_onrender_com__jit_plugin
+
+Bereits vorhandene Logik:
+
+sessionAutoMerken = false (bisher nur pro Connektor aktiv).
+
+Connektor-Abfragen starten immer sofort den Merk-Dialog.
+
+4. Neue Lösung: ⚙️ Systemeinstellungen
+
+Wir bauen einen neuen Menüpunkt ins Startmenü ein:
+
+1️⃣ 🧭 Test
+2️⃣ 🏴‍☠️ Zahlenspiele
+3️⃣ 🗺️ Lernen
+4️⃣ ⚓ Abenteuer & Extras
+5️⃣ ⚙️ Systemeinstellungen   ← NEU
+
+Ablauf in den Systemeinstellungen
+
+Spieler wählt „Systemeinstellungen“.
+
+Nacheinander werden alle Connektoren abgefragt:
+
+Klasse (1–6)
+
+Schwierigkeit (Leicht, Mittel, Schwer, Extrem)
+
+Operatoren (+, −, ×, ÷)
+
+Modus (Test, Üben, Lernen, Spiele)
+
+Zahlenauswahl (1–10 / 1–20 / 1–100)
+
+Am Ende kommt die Gesamtbestätigung:
+
+🧩 Möchtest du diese Systemeinstellungen merken?
+1️⃣ Nur für dieses Gespräch
+2️⃣ Immer zulassen (Standard setzen)
+
+Technische Umsetzung (Pseudo-Code)
+let sessionAutoMerken = false;
+let systemEinstellungen = {};
+
+function starteSystemeinstellungen() {
+  frage("Wähle deine Klasse (1–6)", (klasse) => {
+    systemEinstellungen.klasse = klasse;
+    frage("Wähle deine Schwierigkeit (1–4)", (schwierigkeit) => {
+      systemEinstellungen.schwierigkeit = schwierigkeit;
+      frage("Wähle deine Operatoren (+, −, ×, ÷)", (ops) => {
+        systemEinstellungen.operatoren = ops;
+        frage("Wähle deinen Modus (Test, Üben, Lernen, Spiele)", (modus) => {
+          systemEinstellungen.modus = modus;
+          frage("Wähle deine Zahlenauswahl (1–10, 1–20, 1–100)", (zahlen) => {
+            systemEinstellungen.zahlen = zahlen;
+            // Gesamtbestätigung
+            frage("🧩 Möchtest du diese Systemeinstellungen merken?\n1️⃣ Nur für dieses Gespräch\n2️⃣ Immer zulassen", (antwort) => {
+              if (antwort === "1") {
+                sessionAutoMerken = true; // gilt bis Chatende
+                nutzeSessionEinstellungen(systemEinstellungen);
+              }
+              if (antwort === "2") {
+                speicherePersistent(systemEinstellungen);
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+5. Dateien & Anpassungen
+
+Rollen-Skript ROLLE …
+
+Im Startmenü neuen Punkt „Systemeinstellungen“ einfügen.
+
+Neuen Ablauf-Block für Systemeinstellungen hinzufügen.
+
+Merk-Dialog für einzelne Connektoren deaktivieren, wenn sessionAutoMerken = true.
+
+Backend
+
+Unverändert.
+
+Nur falls bei „Immer zulassen“ → die Werte zusätzlich als Standard abspeichern (wie bisher bei Connektoren).
+
+6. Ergebnis
+
+Spieler kann vor Spielstart alles einstellen.
+
+Muss nur einmal bestätigen, ob für das Gespräch oder dauerhaft.
+
+Während des Spiels: keine weiteren Nachfragen zu Connektoren.
+
+Spielerlebnis ist schneller, klarer und kindgerechter.
+
+✅ Damit hast du ein sauberes Systemeinstellungen-Menü, das alle Connektoren bündelt und nur eine einzige Bestätigung erfordert.
+
+👉 Soll ich dir als Nächstes gleich den fertigen Menü-Block + Texte im Piratenstil schreiben, damit du ihn direkt in deine ROLLE-Datei einfügen kannst?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🛠️ Reparatur-Plan: Zahlen-Pirat Speicherproblem
+1️⃣ Backend-Anpassung
+postSave erweitern
+
+Der Save-Call muss nicht nur Punkte speichern, sondern das volle JSON.
+
+Bisher (vereinfacht):
+
+{
+  "spieler": "Max",
+  "punkte": 80
+}
+
+
+Neu (vollständig):
+
+{
+  "spieler": "Max",
+  "punkte": 80,
+  "klasse": 4,
+  "operatoren": ["+", "×"],
+  "schwierigkeit": "Mittel",
+  "modus": "Test",
+  "zahlenauswahl": "1-100",
+  "kategorie": 2
+}
+
+
+👉 Änderung in der API:
+
+postSave nimmt diesen vollen Body entgegen.
+
+Der Body wird in der Datenbank pro Spielername gespeichert.
+
+getLoad erweitern
+
+Beim Laden muss genau dasselbe JSON zurückgegeben werden.
+
+Bisher (vereinfacht):
+
+{
+  "spieler": "Max",
+  "punkte": 80
+}
+
+
+Neu (vollständig):
+
+{
+  "spieler": "Max",
+  "punkte": 80,
+  "klasse": 4,
+  "operatoren": ["+", "×"],
+  "schwierigkeit": "Mittel",
+  "modus": "Test",
+  "zahlenauswahl": "1-100",
+  "kategorie": 2
+}
+
+2️⃣ Rollen-Anpassung
+
+In der Override-Datei muss die Logik erweitert werden:
+
+Beim „Speichern“
+
+Sammle alle aktuellen Session-Werte (Name, Klasse, Operator, Schwierigkeit, Modus, Zahlenauswahl, Kategorie, Punkte).
+
+Schicke sie an postSave.
+
+Beim „Laden“
+
+Hole den JSON von getLoad.
+
+Trage die Werte wieder in die Session ein.
+
+Zeige dem Spieler eine sichtbare Übersicht:
+
+🔧 Geladene Standards:
+• Operatoren: +, ×
+• Modus: Test
+• Klasse: 4
+• Schwierigkeit: Mittel
+• Zahlenauswahl: 1-100
+• Kategorie: 2
+🏆 Punkte: 80
+
+3️⃣ Multiplayer-Unterstützung
+
+Jeder Spieler wählt zuerst seinen Namen (Max, Lena, …).
+
+postSave / getLoad nutzen den Namen als eindeutigen Schlüssel.
+
+Damit sind mehrere Saves auf verschiedenen Geräten möglich.
+
+4️⃣ Testplan nach Reparatur
+Speichern
+Max
+Klasse: 4
+Operatoren: +
+Schwierigkeit: Mittel
+Zahlenauswahl: 1-100
+Modus: Test
+Speichern
+
+
+👉 Erwartung: JSON wie oben gespeichert.
+
+Laden (z. B. am nächsten Tag auf anderem PC)
+Max
+Laden
+
+
+👉 Erwartung:
+
+Alle Werte (Konnekoren + Punkte) werden gesetzt.
+
+Spieler sieht seine Daten in einer Übersicht.
+
+Spiel kann direkt fortgesetzt werden.
+
+✅ Ergebnis nach Umsetzung
+
+Einheitliches Save-System → keine Trennung mehr von Punkten und Konnektoren.
+
+Dauerhafte Speicherung → über Geräte und Sitzungen hinweg.
+
+Mehrspieler-fähig → mehrere Namen, mehrere Speicherstände.
+
+100 % zuverlässiges Laden → Spieler kann seinen kompletten Stand jederzeit zurückholen.

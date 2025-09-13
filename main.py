@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
 import random, json, os
+from connector_routes import router as connector_router
 
 app = FastAPI(title="Zahlen-Pirat Backend")
+app.include_router(connector_router)
 
 DB_FILE = "scores.json"
 
@@ -43,6 +45,13 @@ class SaveRequest(BaseModel):
     punkte: int
     klasse: Optional[int] = None
     modus: Optional[str] = None
+    operatoren: Optional[List[str]] = []
+    schwierigkeit: Optional[str] = "Einfach"
+    zahlenauswahl: Optional[str] = "1-20"
+    kategorie: Optional[int] = 1
+    dauer: Optional[str] = "-"
+    autosave: Optional[bool] = True
+
 
 class StartRequest(BaseModel):
     modus: Optional[str] = "Test"
@@ -102,21 +111,32 @@ def post_answer(req: AnswerRequest):
     }
 
 # Punkte speichern
+from datetime import datetime  # ⬅️ ganz oben importieren, falls noch nicht vorhanden
+
+@app.post("/save")
+from datetime import datetime
+
 @app.post("/save")
 def save_score(req: SaveRequest):
     scores = load_scores()
-    scores.append(req.dict())
+    entry = req.dict()
+    entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    scores.append(entry)
     save_scores(scores)
-    return {"status": "saved"}
+    return {"message": "Saved", "score": entry}
+
+
 
 # Punkte laden
 @app.get("/load")
-def load_score(spieler: str):
+def load_scores_for_player(spieler: str):
     scores = load_scores()
-    for s in scores:
-        if s["spieler"] == spieler:
-            return s
-    return {"error": "not found"}
+    matching_scores = [s for s in scores if s["spieler"] == spieler]
+
+    # Nur die letzten 20 anzeigen – du kannst hier auch sortieren, z. B. nach Zeit
+    return matching_scores[-20:]
+
+
 
 # Rangliste
 @app.get("/leaderboard")
