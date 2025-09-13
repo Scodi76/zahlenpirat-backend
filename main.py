@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
 import random, json, os
+from datetime import datetime
 from connector_routes import router as connector_router
 
 app = FastAPI(title="Zahlen-Pirat Backend")
@@ -39,6 +40,8 @@ class AnswerRequest(BaseModel):
     antwort: str
     dauerSek: int
     korrekteLoesung: str
+    spieler: str
+    operator: str
 
 class SaveRequest(BaseModel):
     spieler: str
@@ -102,19 +105,37 @@ def get_tasks(req: TaskRequest):
 @app.post("/test/answer")
 def post_answer(req: AnswerRequest):
     korrekt = req.antwort == req.korrekteLoesung
+    punkte_delta = 10 if korrekt else -5
+    gesamtpunkte = max(0, punkte_delta)  # TODO: Aufsummieren wenn du Session-Punkte willst
+
+    # Score laden und erweitern
+    scores = load_scores()
+    entry = {
+        "spieler": req.spieler,  # ✅ kommt jetzt direkt vom Request
+        "punkte": gesamtpunkte,
+        "klasse": 3,
+        "modus": "Test",
+        "operatoren": [req.operator],
+        "schwierigkeit": "Einfach",
+        "zahlenauswahl": "1-20",
+        "kategorie": 1,
+        "dauer": f"{req.dauerSek} Sek",
+        "autosave": True,
+        "datum": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    scores.append(entry)
+    save_scores(scores)
+
     return {
         "korrekt": korrekt,
         "korrekteLoesung": req.korrekteLoesung,
         "erklaerung": f"Die richtige Lösung war {req.korrekteLoesung}.",
-        "punkteDelta": 10 if korrekt else -5,
-        "gesamtpunkte": 10 if korrekt else 0
+        "punkteDelta": punkte_delta,
+        "gesamtpunkte": gesamtpunkte
     }
 
-# Punkte speichern
-from datetime import datetime  # ⬅️ ganz oben importieren, falls noch nicht vorhanden
 
-@app.post("/save")
-from datetime import datetime
+# Punkte speichern
 
 @app.post("/save")
 def save_score(req: SaveRequest):
