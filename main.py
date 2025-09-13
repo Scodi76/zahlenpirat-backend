@@ -44,17 +44,20 @@ class AnswerRequest(BaseModel):
     spieler: str
     operator: str
 
+from typing import Optional, List
+
 class SaveRequest(BaseModel):
     spieler: str
     punkte: int
     klasse: Optional[int] = None
     modus: Optional[str] = None
-    operatoren: Optional[List[str]] = []
-    schwierigkeit: Optional[str] = "Einfach"
-    zahlenauswahl: Optional[str] = "1-20"
-    kategorie: Optional[int] = 1
-    dauer: Optional[str] = "-"
-    autosave: Optional[bool] = True
+    operatoren: Optional[List[str]] = None   # ✅ jetzt None statt []
+    schwierigkeit: Optional[str] = None
+    zahlenauswahl: Optional[str] = None
+    kategorie: Optional[int] = None
+    dauer: Optional[str] = None
+    autosave: Optional[bool] = None
+
 
 
 class StartRequest(BaseModel):
@@ -139,21 +142,49 @@ def post_answer(req: AnswerRequest):
 # Punkte speichern (dauerhaft in scores.json)
 @app.post("/save")
 def save_score(req: SaveRequest):
-    scores = load_scores()
+    try:
+        # Vorhandene Scores laden
+        scores = load_scores()
+        if not isinstance(scores, list):
+            scores = []  # Fallback falls Datei kein Array ist
+    except Exception as e:
+        print("⚠️ Fehler beim Laden von scores.json in /save:", e)
+        scores = []
+
+    # Neuen Eintrag vorbereiten
     entry = req.dict()
     entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    scores.append(entry)   # ✅ in Datei-Liste einfügen
-    save_scores(scores)    # ✅ in scores.json schreiben
+
+    # Eintrag anhängen
+    scores.append(entry)
+
+    try:
+        save_scores(scores)  # Datei überschreiben
+    except Exception as e:
+        print("⚠️ Fehler beim Speichern von scores.json:", e)
+        return {"message": "Fehler beim Speichern", "error": str(e)}
+
     return {"message": "Saved", "score": entry}
+
 
 
 # Punkte laden (dauerhaft aus scores.json)
 @app.get("/load")
 def load_scores_for_player(spieler: str):
-    scores = load_scores()
-    matching_scores = [s for s in scores if s["spieler"].lower() == spieler.lower()]
-    return matching_scores[-20:] if matching_scores else []
+    try:
+        scores = load_scores()
+    except Exception as e:
+        print("⚠️ Fehler beim Laden von scores.json in /load:", e)
+        return []
 
+    # Alle Scores vom Spieler (Case-insensitive)
+    matching_scores = [
+        s for s in scores
+        if "spieler" in s and isinstance(s["spieler"], str) and s["spieler"].lower() == spieler.lower()
+    ]
+
+    # Nur die letzten 20 zurückgeben
+    return matching_scores[-20:]
 
 # Rangliste (dauerhaft aus scores.json)
 @app.get("/leaderboard")
