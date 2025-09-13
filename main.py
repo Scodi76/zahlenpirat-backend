@@ -45,18 +45,20 @@ class AnswerRequest(BaseModel):
     operator: str
 
 from typing import Optional, List
+from pydantic import BaseModel
 
 class SaveRequest(BaseModel):
     spieler: str
     punkte: int
     klasse: Optional[int] = None
     modus: Optional[str] = None
-    operatoren: Optional[List[str]] = None   # ✅ jetzt None statt []
+    operatoren: Optional[List[str]] = None
     schwierigkeit: Optional[str] = None
     zahlenauswahl: Optional[str] = None
     kategorie: Optional[int] = None
     dauer: Optional[str] = None
     autosave: Optional[bool] = None
+
 
 
 
