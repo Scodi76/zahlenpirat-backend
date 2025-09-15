@@ -27,7 +27,8 @@ function saveSpielstand(autosave = true) {
     autosave: autosave
   };
 
-  const result = callAPI(`${BASE_URL}/save`, payload);
+  // ⬇️ angepasst: neuer Backend-Endpoint
+  const result = callAPI(`${BASE_URL}/api/saveScore`, payload);
 
   if (result) {
     zeigeText(`💾 Spielstand gespeichert für ${aktuellerSpieler}! ⚓  
@@ -36,6 +37,7 @@ function saveSpielstand(autosave = true) {
     zeigeText(`⚠️ Fehler beim Speichern! Versuche es bitte später erneut, ${aktuellerSpieler}.`);
   }
 }
+
 
 
 // ✅ Letzte Spielstände anzeigen

@@ -6,8 +6,22 @@ from datetime import datetime
 from connector_routes import router as connector_router
 scores_memory = []
 
-app = FastAPI(title="Zahlen-Pirat Backend")
+# ⬇️ NEU: CORS Middleware einfügen
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="Zahlen-Pirat Backend")   # <-- Erst App erstellen
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # oder deine Domain: ["https://zahlenpirat.de"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ⬆️ BIS HIER
+
 app.include_router(connector_router)
+
 
 DB_FILE = "scores.json"
 
@@ -142,31 +156,28 @@ def post_answer(req: AnswerRequest):
 
 
 # Punkte speichern (dauerhaft in scores.json)
-@app.post("/save")
+@app.post("/api/saveScore")
 def save_score(req: SaveRequest):
     try:
-        # Vorhandene Scores laden
         scores = load_scores()
         if not isinstance(scores, list):
-            scores = []  # Fallback falls Datei kein Array ist
+            scores = []
     except Exception as e:
         print("⚠️ Fehler beim Laden von scores.json in /save:", e)
         scores = []
 
-    # Neuen Eintrag vorbereiten
     entry = req.dict()
     entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Eintrag anhängen
     scores.append(entry)
 
     try:
-        save_scores(scores)  # Datei überschreiben
+        save_scores(scores)
     except Exception as e:
         print("⚠️ Fehler beim Speichern von scores.json:", e)
         return {"message": "Fehler beim Speichern", "error": str(e)}
 
     return {"message": "Saved", "score": entry}
+
 
 
 
