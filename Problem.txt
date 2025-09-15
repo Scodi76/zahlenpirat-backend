@@ -472,3 +472,233 @@ Dauerhafte Speicherung → über Geräte und Sitzungen hinweg.
 Mehrspieler-fähig → mehrere Namen, mehrere Speicherstände.
 
 100 % zuverlässiges Laden → Spieler kann seinen kompletten Stand jederzeit zurückholen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zahlen-Pirat sagte:
+
+Sehr gute Idee 💡 – ich fasse dir alles zu einem Projekt-Dokumentationsskript zusammen, das du in einem neuen Chat hochladen kannst.
+Das Skript enthält:
+
+Projektstruktur (Dateien + Abhängigkeiten).
+
+Code-Inhalte (vereinfacht, wichtigste Dateien mit Kernfunktionen).
+
+Bisherige Probleme & Fixes.
+
+Noch offene Probleme (Save-Endpoint / Cloudflare / CORS).
+
+Nächste Schritte.
+
+📄 Projekt-Dokumentationsskript (zahlenpirat_project_doc.md)
+# 📘 Zahlenpirat Backend – Projektdokumentation
+
+## 1. Projektstruktur
+
+
+
+zahlenpirat-backend/
+│
+├── main.py # Haupt-Backend (FastAPI App, Endpoints)
+├── connector_routes.py # Router (Zusatz-Endpunkte, integriert in main.py)
+├── scores.json # Datenbank-Datei (lokal JSON, speichert Scores)
+├── requirements.txt # Python Dependencies
+└── (evtl. weitere utils)
+
+
+---
+
+## 2. Wichtigste Abhängigkeiten
+
+- **FastAPI** → Framework für API
+- **Pydantic** → Datenvalidierung (Request-Bodies)
+- **uvicorn** → Server
+- **JSON (local file)** → als persistente Datenbank
+- **random** → Zufallszahlen für Aufgaben
+- **datetime** → Zeitstempel für Scores
+- **Render.com** → Deployment
+- **Cloudflare** → Proxy vor Render (macht aktuell Probleme)
+
+---
+
+## 3. Kern-Dateien & Funktionen
+
+### main.py
+- **Healthcheck** `/health` → prüft Serverstatus
+- **Spiel starten** `/test/start` → erstellt Session (Dummy-UUID `s1`)
+- **Aufgaben generieren** `/get/tasks` → liefert Aufgaben basierend auf Operatoren
+- **Antwort prüfen** `/test/answer` → validiert Antwort, speichert Score
+- **Score speichern** `/save` → speichert Score in `scores.json`
+- **Score laden** `/load` → lädt Scores eines Spielers
+- **Leaderboard** `/leaderboard` → sortiert Scores absteigend
+
+---
+
+### connector_routes.py
+- Enthält zusätzliche API-Routen (Details hier nicht relevant, da Problem im Save-Endpoint liegt)
+
+---
+
+## 4. Bisherige Probleme & Fixes
+
+### ✅ Probleme behoben:
+1. **GET /tasks 404**
+   - Ursache: Falsche HTTP-Methode (GET statt POST).
+   - Fix: Endpoint auf `POST /get/tasks` getestet → funktioniert.
+
+2. **load-Endpoint Fehler**
+   - Ursache: Unsichere Handhabung von `scores.json`.
+   - Fix: Exception-Handling + Case-insensitive Filter eingebaut.
+
+---
+
+### ⚠️ Aktuelles Hauptproblem: POST /save
+- **Fehler:** `400 Bad Request` von **Cloudflare**, nicht vom Backend.
+- **Ursache:**
+  - Cloudflare blockt zu „einfache“ oder „ungewöhnliche“ Requests.
+  - Minimaler Body (`{"spieler": "Mark", "punkte": 120}`) führt zu Blockade.
+  - Backend funktioniert lokal (Postman gegen Localhost).
+- **Fix-Versuche bisher:**
+  - Default-Parameter in `SaveRequest` optional gemacht.
+  - Vollständigen Body gesendet → Cloudflare blockt trotzdem.
+  - Header `Content-Type: application/json` gesetzt → keine Änderung.
+
+---
+
+## 5. Notwendige Maßnahmen
+
+1. **CORS Middleware hinzufügen**  
+   In `main.py` am Anfang:
+   ```python
+   from fastapi.middleware.cors import CORSMiddleware
+
+   app.add_middleware(
+       CORSMiddleware,
+       allow_origins=["*"],
+       allow_credentials=True,
+       allow_methods=["*"],
+       allow_headers=["*"],
+   )
+
+
+SaveRequest vereinfachen / robust machen
+
+from typing import Optional, List
+
+class SaveRequest(BaseModel):
+    spieler: str
+    punkte: int
+    klasse: Optional[int] = None
+    modus: Optional[str] = None
+    operatoren: Optional[List[str]] = None
+    schwierigkeit: Optional[str] = None
+    zahlenauswahl: Optional[str] = None
+    kategorie: Optional[int] = None
+    dauer: Optional[str] = None
+    autosave: Optional[bool] = None
+
+
+Render Config prüfen
+
+In render.yaml oder Render Dashboard sicherstellen:
+
+Allow POST Methoden
+
+Keine zusätzlichen „Body Size“ Limits
+
+Tests in Postman
+
+Body vollständig ausfüllen (nicht nur spieler/punkte).
+
+Beispiel:
+
+{
+  "spieler": "Mark",
+  "punkte": 120,
+  "klasse": 3,
+  "modus": "Test",
+  "operatoren": ["+"],
+  "schwierigkeit": "Einfach",
+  "zahlenauswahl": "1-20",
+  "kategorie": 1,
+  "dauer": "2 Min",
+  "autosave": true
+}
+
+6. Nächste Schritte
+
+CORS Middleware in main.py aktivieren.
+
+POST /save erneut mit vollem Body testen.
+
+Falls immer noch 400 Bad Request:
+
+Render Logs prüfen (render dashboard → events → logs).
+
+Evtl. URL anpassen (/api/save statt /save), um Cloudflare-Regeln zu umgehen.
+
+Wenn lokal funktioniert, auf Render deployen und erneut testen.
+
+7. Zusammenfassung
+
+Backend läuft ✅ (Healthcheck ok, Start ok, Tasks ok).
+
+Problem steckt in /save → Cloudflare blockiert POST.
+
+Fix: CORS Middleware + vollständiger Body + evtl. Routenname ändern.
+
+Nächster Schritt: Änderungen deployen und erneut testen.
+
+
+---
+
+👉 Dieses Skript kannst du in einem **neuen Chat hochladen** und sagen:  
+_"Hier ist die Projektdokumentation, wir haben Probleme mit `/save` auf Render (400 Bad Request). Bitte analysiere und gib mir die nächsten Schritte."_  
+
+Willst du, dass ich dir zusätzlich gleich eine **komplette Projektstruktur mit allen Dateien (main.py, connector_routes.py, requirements.txt, render.yaml)** als ZIP vorbereite, damit du direkt hochladen kannst?

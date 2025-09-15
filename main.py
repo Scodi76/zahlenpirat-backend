@@ -100,6 +100,44 @@ def start_test(req: StartRequest):
         "anzahlAufgaben": req.anzahlAufgaben
     }
 
+
+    # Aufgaben erzeugen (GET-Variante für Frontend-Kompatibilität)
+@app.get("/tasks")
+def get_tasks(
+    schwierigkeit: str = Query(...),
+    klasse: int = Query(...),
+    operator: str = Query(...),
+    count: int = Query(1),
+):
+    tasks = []
+    import random
+
+    for i in range(count):
+        a, b = random.randint(1, 10), random.randint(1, 10)
+
+        if operator == "+":
+            frage, loesung, op = f"{a} + {b}", str(a + b), "+"
+        elif operator == "-":
+            frage, loesung, op = f"{a} - {b}", str(a - b), "-"
+        elif operator == "×":
+            frage, loesung, op = f"{a} × {b}", str(a * b), "×"
+        elif operator == "÷" and b != 0:
+            frage, loesung, op = f"{a} ÷ {b}", str(a // b), "÷"
+        else:
+            continue
+
+        tasks.append({
+            "id": str(i + 1),
+            "frage": frage,
+            "korrekteLoesung": loesung,
+            "operator": op,
+            "klasse": klasse,
+            "schwierigkeit": schwierigkeit
+        })
+
+    return {"tasks": tasks}
+
+
 # Aufgaben erzeugen
 @app.post("/get/tasks")
 def get_tasks(req: TaskRequest):

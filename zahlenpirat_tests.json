@@ -1,0 +1,56 @@
+{
+  "info": {
+    "name": "Zahlenpirat Backend Tests",
+    "_postman_id": "f6c7f6c3-4b6c-40a4-8f6e-123456789abc",
+    "description": "Tests für Score-Endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "POST /api/storeScore",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"spieler\": \"Mark\",\n    \"punkte\": 120,\n    \"klasse\": 3,\n    \"modus\": \"Test\",\n    \"operatoren\": [\"+\"],\n    \"schwierigkeit\": \"Einfach\",\n    \"zahlenauswahl\": \"1-20\",\n    \"kategorie\": 1,\n    \"dauer\": \"2 Min\",\n    \"autosave\": true\n}"
+        },
+        "url": {
+          "raw": "https://zahlenpirat-backend.onrender.com/api/storeScore",
+          "protocol": "https",
+          "host": ["zahlenpirat-backend", "onrender", "com"],
+          "path": ["api", "storeScore"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "PUT /api/score",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"spieler\": \"Mark\",\n    \"punkte\": 150,\n    \"klasse\": 2,\n    \"modus\": \"Test\",\n    \"operatoren\": [\"-\"],\n    \"schwierigkeit\": \"Mittel\",\n    \"zahlenauswahl\": \"1-50\",\n    \"kategorie\": 2,\n    \"dauer\": \"3 Min\",\n    \"autosave\": false\n}"
+        },
+        "url": {
+          "raw": "https://zahlenpirat-backend.onrender.com/api/score",
+          "protocol": "https",
+          "host": ["zahlenpirat-backend", "onrender", "com"],
+          "path": ["api", "score"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
