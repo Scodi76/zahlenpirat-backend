@@ -155,28 +155,7 @@ def post_answer(req: AnswerRequest):
     }
 
 
-# Punkte speichern (dauerhaft in scores.json)
-@app.post("/api/storeScore")
-def save_score(req: SaveRequest):
-    try:
-        scores = load_scores()
-        if not isinstance(scores, list):
-            scores = []
-    except Exception as e:
-        print("⚠️ Fehler beim Laden von scores.json in /save:", e)
-        scores = []
 
-    entry = req.dict()
-    entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    scores.append(entry)
-
-    try:
-        save_scores(scores)
-    except Exception as e:
-        print("⚠️ Fehler beim Speichern von scores.json:", e)
-        return {"message": "Fehler beim Speichern", "error": str(e)}
-
-    return {"message": "Saved", "score": entry}
 
 
 
