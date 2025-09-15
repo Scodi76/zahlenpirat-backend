@@ -400,6 +400,21 @@ def handle_user_input(session_id: str, text: str) -> str:
         state.expected_answer = "12"
         return "Demo-Aufgabe: 7 + 5 = ?"
 
+        # 🚀 NEU: Startsignal "Ahoi" -> erste Aufgabe generieren
+    if low == "ahoi":
+        # Beispiel: Einfache Aufgabe im Bereich 1–10
+        import random
+        a, b = random.randint(1, 10), random.randint(1, 10)
+        op = "+"
+        result = a + b
+
+        # Session merkt sich, dass wir jetzt im Aufgabenmodus sind
+        state.in_aufgabe = True
+        state.expected_answer = str(result)
+
+        return f"⚔️ Erste Aufgabe: {a} + {b} = ?"
+
+
     # Normale Fortsetzung → aktuelle Parameter (zur Kontrolle ausgeben)
     merged = build_params_with_priority(None, state.session_standards, persistent)
     if not merged:
