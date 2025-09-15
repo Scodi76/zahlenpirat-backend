@@ -155,7 +155,37 @@ def post_answer(req: AnswerRequest):
     }
 
 
+# Punkte speichern (dauerhaft in scores.json) – POST-Version
+@app.post("/api/storeScore")
+def save_score_post(req: SaveRequest):
+    return save_score_logic(req)
 
+# Punkte speichern (dauerhaft in scores.json) – PUT-Version
+@app.put("/api/score")
+def save_score_put(req: SaveRequest):
+    return save_score_logic(req)
+
+# Gemeinsame Logik für Score-Speichern
+def save_score_logic(req: SaveRequest):
+    try:
+        scores = load_scores()
+        if not isinstance(scores, list):
+            scores = []
+    except Exception as e:
+        print("⚠️ Fehler beim Laden von scores.json in /save:", e)
+        scores = []
+
+    entry = req.dict()
+    entry["datum"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    scores.append(entry)
+
+    try:
+        save_scores(scores)
+    except Exception as e:
+        print("⚠️ Fehler beim Speichern von scores.json:", e)
+        return {"message": "Fehler beim Speichern", "error": str(e)}
+
+    return {"message": "Saved", "score": entry}
 
 
 
