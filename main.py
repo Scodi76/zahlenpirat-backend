@@ -216,8 +216,3 @@ def leaderboard():
     for idx, s in enumerate(sorted_scores, start=1):
         s["rang"] = idx
     return sorted_scores
-
-
-
-
-hLLO
