@@ -278,30 +278,39 @@ def get_history(spieler: str = Query(...)) -> Dict[str, Any]:
 # --------------------------------------------------------------------
 @router.post("/postSaveExtended")
 def post_save_extended(
-    sessionData: Dict[str, Any] = Body(...)
+    sessionData: Dict[str, Any] = Body(...),
 ) -> Dict[str, Any]:
     """Erweitertes Speichern: Sessiondaten direkt übernehmen + Pflichtfelder ergänzen."""
-    scores = _load_scores()
-    spieler = sessionData.get("spieler", "Anonym")
+    try:
+        logging.info(f"[SAVE] Anfrage erhalten: {sessionData}")
 
-    if spieler not in scores:
-        scores[spieler] = {"sessions": []}
+        scores = _load_scores()
+        spieler = sessionData.get("spieler", "Anonym")
 
-    # Pflichtfelder ergänzen
-    sessionData.setdefault("modus", "Test")
-    sessionData.setdefault("klasse", None)
-    sessionData.setdefault("schwierigkeit", None)
-    sessionData.setdefault("operatoren", [])
-    sessionData.setdefault("status", "abgebrochen")
-    sessionData.setdefault("aufgabenGesamt", 0)
-    sessionData.setdefault("aufgabenGeloest", 0)
-    sessionData.setdefault("punkte", 0)
+        if spieler not in scores:
+            scores[spieler] = {"sessions": []}
 
-    # Automatische Felder
-    sessionData["sessionId"] = str(uuid.uuid4())
-    sessionData["datum"] = datetime.datetime.utcnow().isoformat()
+        # Pflichtfelder ergänzen
+        sessionData.setdefault("modus", "Test")
+        sessionData.setdefault("klasse", None)
+        sessionData.setdefault("schwierigkeit", None)
+        sessionData.setdefault("operatoren", [])
+        sessionData.setdefault("status", "abgebrochen")
+        sessionData.setdefault("aufgabenGesamt", 0)
+        sessionData.setdefault("aufgabenGeloest", 0)
+        sessionData.setdefault("punkte", 0)
 
-    scores[spieler]["sessions"].append(sessionData)
-    _save_scores(scores)
+        # Automatische Felder
+        sessionData["sessionId"] = str(uuid.uuid4())
+        sessionData["datum"] = datetime.datetime.utcnow().isoformat()
 
-    return {"status": "ok", "saved": sessionData}
+        scores[spieler]["sessions"].append(sessionData)
+        _save_scores(scores)
+
+        logging.info(f"[SAVE] Erfolgreich gespeichert für Spieler={spieler}: {sessionData}")
+        return {"status": "ok", "saved": sessionData}
+
+    except Exception as e:
+        logging.error("[SAVE] Fehler beim Speichern", exc_info=True)
+        return {"status": "error", "error": str(e)}
+
