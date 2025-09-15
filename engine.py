@@ -255,6 +255,20 @@ def _is_numeric_answer(s: str) -> bool:
         return True
     return False
 
+# ======================
+# Neue Aufgabe generieren
+# ======================
+def _generate_task(state) -> str:
+    import random
+    a, b = random.randint(1, 10), random.randint(1, 10)
+    op = "+"
+    result = a + b
+
+    state.in_aufgabe = True
+    state.expected_answer = str(result)
+
+    return f"{a} + {b} = ?"
+
 
 # ======================
 # Hauptlogik
@@ -402,6 +416,7 @@ def handle_user_input(session_id: str, text: str) -> str:
 
         # 🚀 NEU: Startsignal "Ahoi" -> erste Aufgabe generieren
     if low == "ahoi":
+        return f"⚔️ Erste Aufgabe: {_generate_task(state)}"
         # Beispiel: Einfache Aufgabe im Bereich 1–10
         import random
         a, b = random.randint(1, 10), random.randint(1, 10)
