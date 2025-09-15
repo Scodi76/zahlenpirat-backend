@@ -198,6 +198,12 @@ def post_answer(req: AnswerRequest):
 def save_score_post(req: SaveRequest):
     return save_score_logic(req)
 
+# ⚓ Alias: /save → identisch zu /api/storeScore
+@app.post("/save")
+def save_score_alias(req: SaveRequest):
+    return save_score_logic(req)
+
+
 # Punkte speichern (dauerhaft in scores.json) – PUT-Version
 @app.put("/api/score")
 def save_score_put(req: SaveRequest):
