@@ -156,7 +156,7 @@ def post_answer(req: AnswerRequest):
 
 
 # Punkte speichern (dauerhaft in scores.json)
-@app.post("/api/saveScore")
+@app.post("/api/storeScore")
 def save_score(req: SaveRequest):
     try:
         scores = load_scores()
