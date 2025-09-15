@@ -192,6 +192,11 @@ def current(sessionId: str = Query(...), plain: bool = Query(True)) -> Dict[str,
         text = to_plain(text)
     return {"text": text, "data": data}
 
+
+import logging, traceback
+logging.basicConfig(level=logging.INFO)
+
+
 @router.post("/flow")
 def flow(
     sessionId: str = Body(...),
@@ -199,12 +204,14 @@ def flow(
     plain: bool = Query(True),  # plain standardmäßig an
 ) -> Dict[str, str]:
     try:
+        logging.info(f"[FLOW] Eingabe erhalten – sessionId={sessionId}, text={text}")
         out = handle_user_input(sessionId, text)
         if plain:
             out = to_plain(out)
+        logging.info(f"[FLOW] Ausgabe: {out}")
         return {"text": out}
     except Exception as e:
-        # saubere Fehlermeldung anstatt roher Exception
+        logging.error("Fehler im /flow", exc_info=True)  # Stacktrace in Render Logs
         return {"text": f"⚠️ Arr, ein Fehler ist aufgetreten im Gespräch: {str(e)}"}
 
 # --------------------------------------------------------------------
