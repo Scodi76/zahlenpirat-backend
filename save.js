@@ -28,7 +28,7 @@ function saveSpielstand(autosave = true) {
   };
 
   // ⬇️ angepasst: neuer Backend-Endpoint
-  const result = callAPI(`${BASE_URL}/api/saveScore`, payload);
+  const result = callAPI(`${BASE_URL}/api/storeScore`, payload);
 
   if (result) {
     zeigeText(`💾 Spielstand gespeichert für ${aktuellerSpieler}! ⚓  

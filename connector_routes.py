@@ -198,10 +198,14 @@ def flow(
     text: str = Body(...),
     plain: bool = Query(True),  # plain standardmäßig an
 ) -> Dict[str, str]:
-    out = handle_user_input(sessionId, text)
-    if plain:
-        out = to_plain(out)
-    return {"text": out}
+    try:
+        out = handle_user_input(sessionId, text)
+        if plain:
+            out = to_plain(out)
+        return {"text": out}
+    except Exception as e:
+        # saubere Fehlermeldung anstatt roher Exception
+        return {"text": f"⚠️ Arr, ein Fehler ist aufgetreten im Gespräch: {str(e)}"}
 
 # --------------------------------------------------------------------
 # NEUE FUNKTIONEN: Session-Speichern und -Historie
