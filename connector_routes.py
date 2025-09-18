@@ -1,6 +1,7 @@
 # C:\Users\mnold_t1ohvc3\Documents\zahlenpirat-backend\connector_routes.py
 from fastapi import APIRouter, Body, Query
 from typing import Dict, Any
+import requests
 
 # Normalisierer aus der Engine (für Operatoren/Schwierigkeit/Modus)
 from engine import _normalize_operator_value, _normalize_schwierigkeit, _normalize_modus
@@ -313,4 +314,34 @@ def post_save_extended(
     except Exception as e:
         logging.error("[SAVE] Fehler beim Speichern", exc_info=True)
         return {"status": "error", "error": str(e)}
+
+# --------------------------------------------------------------------
+# NEU: Save mit Fallback (/save → /postSaveExtended)
+# --------------------------------------------------------------------
+@router.post("/saveWithFallback")
+def save_with_fallback(sessionData: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+    """
+    Versucht zuerst /save aufzurufen.
+    Falls das fehlschlägt (Cloudflare 400/Timeout/etc.), dann /postSaveExtended.
+    """
+    base_url = "https://<dein-render-service>.onrender.com"
+
+    try:
+        # 1. Versuch: /save
+        resp = requests.post(f"{base_url}/save", json=sessionData, timeout=5)
+        if resp.ok:
+            return {"status": "ok", "source": "/save", "data": resp.json()}
+        else:
+            raise Exception(f"/save fehlgeschlagen: {resp.status_code} {resp.text}")
+
+    except Exception as e:
+        # 2. Versuch: /postSaveExtended
+        try:
+            resp2 = requests.post(f"{base_url}/postSaveExtended", json=sessionData, timeout=5)
+            if resp2.ok:
+                return {"status": "ok", "source": "/postSaveExtended", "data": resp2.json()}
+            else:
+                return {"status": "error", "source": "/postSaveExtended", "error": resp2.text}
+        except Exception as e2:
+            return {"status": "error", "error": f"Fallback fehlgeschlagen: {str(e2)}"}
 
