@@ -1,6 +1,7 @@
 # C:\Users\mnold_t1ohvc3\Documents\zahlenpirat-backend\connector_routes.py
 from fastapi import APIRouter, Body, Query
 from typing import Dict, Any
+from engine import get_state
 import requests
 
 # Normalisierer aus der Engine (für Operatoren/Schwierigkeit/Modus)
