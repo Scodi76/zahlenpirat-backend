@@ -1,5 +1,5 @@
-fastapi
-uvicorn
-requests
-pydantic
-python-multipart
+fastapi==0.116.2
+uvicorn==0.35.0
+pydantic==2.11.9
+python-multipart==0.0.9
+requests==2.32.3
