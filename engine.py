@@ -13,25 +13,23 @@ class SessionState:
     pending_value: Optional[str] = None
     session_standards: Dict[str, str] = field(default_factory=dict)
 
-    # Aufgaben-Modus (falls genutzt)
+    # Aufgaben-Modus
     in_aufgabe: bool = False
     expected_answer: Optional[str] = None
 
-    # NEU: Namens-Dialog & Operatoren-Auswahl
+    # Namens- & Operatoren-Dialoge
     name_dialog_aktiv: bool = False
     operator_dialog_aktiv: bool = False
 
-    # Optional: aktueller Spielername in der Session (persistenter Key ist "Name")
+    # Spielername
     player_name: Optional[str] = None
 
-
-    # 📊 Session-Statistiken (immer vorhanden, Default-Werte)
+    # 📊 Session-Statistiken
     session_stats: Dict[str, int] = field(default_factory=lambda: {
         "aufgabenGesamt": 0,
         "aufgabenGeloest": 0,
         "punkte": 0
     })
-
 
 
 # In-Memory-Sessionstore
@@ -52,21 +50,18 @@ def _normalize_operator_token(tok: str) -> str:
     t = tok.strip()
     if not t:
         return t
-    # Zahl → Operator
     num_map = {"1": "+", "2": "-", "3": "×", "4": "÷"}
     if t in num_map:
         return num_map[t]
-    # Synonyme / Varianten
     sym = (
         t.replace("x", "×").replace("X", "×").replace("*", "×")
          .replace("/", "÷").replace(":", "÷")
-         .replace("−", "-").replace("–", "-")  # verschiedene Minus-Zeichen
+         .replace("−", "-").replace("–", "-")
     )
     return sym if sym in {"+", "-", "×", "÷"} else t
 
 
 def _normalize_operator_value(raw: str) -> str:
-    # Komma- oder Leerzeichen-getrennt; Duplikate raus; nur gültige Operatoren
     parts = [p for chunk in raw.split(",") for p in chunk.split() if p]
     out: list[str] = []
     for p in parts:
@@ -112,7 +107,7 @@ def parse_connector(text: str) -> Optional[Tuple[str, str]]:
 
     if low.startswith("operatoren:"):
         v = t.split(":", 1)[1].strip()
-        v = _normalize_operator_value(v)   # normalisiert hinein
+        v = _normalize_operator_value(v)
         return ("Operatoren", v)
 
     if low.startswith("modus:"):
@@ -145,7 +140,6 @@ def build_params_with_priority(
     session: Dict[str, str],
     persistent: Dict[str, str],
 ) -> Dict[str, str]:
-    """Priorität: explizit > Sitzung > persistent."""
     out: Dict[str, str] = {}
     explicit = explicit or {}
     keys = {"Operatoren", "Modus", "Klasse", "Schwierigkeit", "Zahlenauswahl"}
@@ -164,10 +158,6 @@ def build_params_with_priority(
 # ======================
 
 def get_effective_settings(session_id: str) -> Dict[str, Dict[str, str]]:
-    """
-    Liefert die effektiv genutzten Einstellungen (Session > Persistent),
-    plus die Rohquellen; Anzeige ist stets normalisiert.
-    """
     state = get_state(session_id)
     persistent = load_persistent()
 
@@ -202,7 +192,6 @@ def get_effective_settings(session_id: str) -> Dict[str, Dict[str, str]]:
 # ======================
 
 def format_confirmation_and_menu(key: str, value: str) -> str:
-    # Für die freundliche Anzeige normalisieren
     if key == "Operatoren":
         value = _normalize_operator_value(value)
 
@@ -243,34 +232,32 @@ def _operator_choice_menu() -> str:
 
 
 # ======================
-# Aufgaben-Helfer (falls genutzt)
+# Aufgaben-Helfer
 # ======================
 
 def _is_numeric_answer(s: str) -> bool:
-    """Erlaubte Antworten im Aufgabenmodus: Ganzzahl, Dezimal (Punkt/Komma), einfacher Bruch."""
     t = s.strip()
     if not t:
         return False
-    # Bruch
     if "/" in t:
         num_den = t.split("/", 1)
         if len(num_den) == 2:
             a, b = num_den[0].strip(), num_den[1].strip()
             return a.replace("-", "", 1).isdigit() and b.replace("-", "", 1).isdigit()
         return False
-    # Dezimal mit Komma/Punkt → in Zahl verwandelbar?
     t2 = t.replace(",", ".")
     if t2.replace("-", "", 1).replace(".", "", 1).isdigit():
         return True
     return False
 
+
 # ======================
 # Neue Aufgabe generieren
 # ======================
+
 def _generate_task(state) -> str:
     import random
     a, b = random.randint(1, 10), random.randint(1, 10)
-    op = "+"
     result = a + b
 
     state.in_aufgabe = True
@@ -293,89 +280,110 @@ def handle_user_input(session_id: str, text: str) -> str:
     if t.lower() == "standard zurücksetzen":
         state.session_standards.clear()
         save_persistent({})
-        return "♻️ Alle Standards zurückgesetzt. Nutze wieder deine nächsten Eingaben."
+        return "♻️ Alle Standards zurückgesetzt."
 
-    # Merken-Dialog (1/2/3)
+    # Merken-Dialog
     if state.merk_dialog_aktiv:
         choice = t
         if choice in ("1", "2", "3"):
             key = state.merk_dialog_key
             value = state.pending_value
-
-            # Cleanup (immer)
             state.merk_dialog_aktiv = False
             state.merk_dialog_key = None
             state.pending_value = None
 
             if not key or value is None:
-                return "🔓 Abgebrochen. Nutze deine nächste Auswahl."
+                return "🔓 Abgebrochen."
 
-            # Vor dem Speichern normalisieren
             if key == "Operatoren":
                 value = _normalize_operator_value(value)
             elif key == "Schwierigkeit":
                 value = _normalize_schwierigkeit(value)
             elif key == "Modus":
                 value = _normalize_modus(value)
-            # Name wird nicht verändert, nur getrimmt
             elif key == "Name":
                 value = value.strip()
 
             if choice == "1":
-                # nur diesmal
                 if key == "Name":
                     state.player_name = value
-                return "🔓 Alles klar – ich nutze diese Auswahl nur jetzt."
+                return "🔓 Alles klar – nur jetzt gültig."
             if choice == "2":
-                # Sitzung
                 if key == "Name":
                     state.player_name = value
                 else:
                     state.session_standards[key] = value
-                return "🗂️ Gemerkt für dieses Gespräch. Gilt bis zum Ende der Sitzung."
-            # choice == "3" → persistent
+                return "🗂️ Gemerkt für diese Sitzung."
             persistent[key] = value
             save_persistent(persistent)
-            return "📌 Standard gespeichert. Beim nächsten Start automatisch aktiv."
+            return "📌 Standard gespeichert."
         return "👉 Antworte mit „1“, „2“ oder „3“."
 
-    # Während einer Aufgabe: nur numerische Antworten erlauben
+    # Während einer Aufgabe
     if state.in_aufgabe:
         if not _is_numeric_answer(t):
             return (
-                "Bitte gib **nur die Antwort als Zahl** ein (z. B. 12, -3, 3/4 oder 2,5). "
-                "Texte wie \"richtig\", \"zurueck\", \"vertippt\" usw. werden nicht akzeptiert.\n\n"
-                "Tipp: Einstellungen setzt du im Format \"Operatoren: +\" oder \"Schwierigkeit: Mittel\"."
+                "Bitte gib **nur die Antwort als Zahl** ein (z. B. 12, -3, 3/4 oder 2,5)."
             )
-        # (Hier Beispielbewertung, falls du Aufgaben nutzt)
+
         given = t.replace(",", ".")
         exp = (state.expected_answer or "").replace(",", ".")
         state.in_aufgabe = False
         state.expected_answer = None
-        if given == exp:
-            return "✅ Richtig!"
-        return f"❌ Leider falsch. Erwartet war: {exp}"
 
-    # NEU: Namensdialog aktiv?
+        state.session_stats["aufgabenGesamt"] += 1
+        if given == exp:
+            state.session_stats["aufgabenGeloest"] += 1
+            state.session_stats["punkte"] += 10
+            feedback = f"✅ Richtig, aye! ⚓\nDie Lösung ist {exp}."
+        else:
+            feedback = f"❌ Leider falsch. Erwartet war: {exp}"
+
+        if state.session_stats["aufgabenGesamt"] >= 10:
+            richtig = state.session_stats["aufgabenGeloest"]
+            falsch = state.session_stats["aufgabenGesamt"] - richtig
+            punkte = state.session_stats["punkte"]
+
+            note = "1 (Sehr gut)" if richtig == 10 else \
+                   "2 (Gut)" if richtig >= 8 else \
+                   "3 (Befriedigend)" if richtig >= 6 else \
+                   "4 (Ausreichend)" if richtig >= 4 else "5 (Ungenügend)"
+
+            return (
+                f"{feedback}\n\n"
+                f"👉 {state.player_name or 'Piratenfreund'}, das war deine 10. Aufgabe – die Prüfung ist beendet! 🏴‍☠️\n\n"
+                f"🏁 Prüfung beendet!\n"
+                f"✅ Richtige Antworten: {richtig}\n"
+                f"❌ Falsche Antworten: {falsch}\n"
+                f"🏆 Gesamtpunkte: {punkte}\n"
+                f"📖 Note: {note}\n"
+                f"⏳ Dauer: ca. wenige Minuten\n\n"
+                f"💾 Spielstand gespeichert für {state.player_name or 'Anonymer Matrose'}! ⚓\n"
+                "👉 Was möchtest du tun?\n"
+                "1️⃣ Nochmal spielen\n"
+                "2️⃣ Schwierigkeit erhöhen\n"
+                "3️⃣ Zurück zum Start"
+            )
+
+        return f"{feedback}\n\n⚔️ Nächste Aufgabe: {_generate_task(state)}"
+
+    # Namensdialog
     if state.name_dialog_aktiv:
         candidate = t.strip()
-        # einfache Validierung (nur Buchstaben/Leer-/Bindestrich, 1..20)
         import re
         if not re.fullmatch(r"[A-Za-zÄÖÜäöüß\- ]{1,20}", candidate):
-            return "Bitte gib nur deinen Namen ein (max. 20 Zeichen, nur Buchstaben, Leer- oder Bindestrich)."
+            return "Bitte gib nur deinen Namen ein (max. 20 Zeichen)."
         state.name_dialog_aktiv = False
-        # gleich Merken-Dialog starten (Key = "Name")
         state.merk_dialog_aktiv = True
         state.merk_dialog_key = "Name"
         state.pending_value = candidate
         return format_confirmation_and_menu("Name", candidate)
 
-    # NEU: Operatoren-Auswahldialog aktiv?
+    # Operatorendialog
     if state.operator_dialog_aktiv:
-        # Erlaube z. B. "13", "1,3", "1 3"
         digits = [ch for ch in t if ch in "1234"]
         if not digits:
-            return "Bitte antworte mit Ziffern 1..4 (z. B. 13 oder 1,3)."
+            return "Bitte antworte mit Ziffern 1..4."
         mapping = {"1": "+", "2": "-", "3": "×", "4": "÷"}
         ops = []
         for d in digits:
@@ -384,53 +392,48 @@ def handle_user_input(session_id: str, text: str) -> str:
                 ops.append(sym)
         value = ",".join(ops)
         state.operator_dialog_aktiv = False
-        # Danach direkt Merken-Dialog für Operatoren
         state.merk_dialog_aktiv = True
         state.merk_dialog_key = "Operatoren"
         state.pending_value = value
         return format_confirmation_and_menu("Operatoren", value)
 
-    # Neuer Connektor (Key:Value)
+    # Connector Key:Value
     parsed = parse_connector(t_raw)
     if parsed:
         key, value = parsed
-        # Start Merken-Dialog
         state.merk_dialog_aktiv = True
         state.merk_dialog_key = key
         state.pending_value = value
         return format_confirmation_and_menu(key, value)
 
-    # NEU: Befehle ohne Doppelpunkt
+    # Befehle ohne Doppelpunkt
     low = t.lower()
     if low in {"name", "spieler", "name ändern", "name aendern"}:
         if state.in_aufgabe:
-            return "Beantworte zuerst die aktuelle Aufgabe, dann ändern wir den Namen."
-        # starte Namensdialog
+            return "Beantworte zuerst die aktuelle Aufgabe."
         current_name = persistent.get("Name") or state.player_name
         hint = f"(Aktuell: {current_name})" if current_name else ""
         state.name_dialog_aktiv = True
-        return f"Wie möchtest du genannt werden? Schreib nur deinen Namen. {hint}".strip()
+        return f"Wie möchtest du genannt werden? {hint}".strip()
 
     if low in {"operatoren", "operator", "ops"}:
         if state.in_aufgabe:
-            return "Beantworte zuerst die aktuelle Aufgabe, dann ändern wir die Operatoren."
+            return "Beantworte zuerst die aktuelle Aufgabe."
         state.operator_dialog_aktiv = True
         return _operator_choice_menu()
 
-    # Beispiel-Aufgabe starten (falls gewünscht)
+    # Beispiel-Aufgabe
     if low == "demo":
         state.in_aufgabe = True
         state.expected_answer = "12"
         return "Demo-Aufgabe: 7 + 5 = ?"
 
-        # 🚀 NEU: Startsignal "Ahoi" -> erste Aufgabe generieren
     if low == "ahoi":
         return f"⚔️ Erste Aufgabe: {_generate_task(state)}"
 
-
-    # Normale Fortsetzung → aktuelle Parameter (zur Kontrolle ausgeben)
+    # Default → Einstellungen anzeigen
     merged = build_params_with_priority(None, state.session_standards, persistent)
     if not merged:
-        return "Weiter ohne gesetzte Standards. Setze z. B. „Operatoren: +“ oder tippe „Operatoren“ für eine Auswahl."
+        return "Weiter ohne gesetzte Standards."
     lines = [f"{k}: {v}" for k, v in merged.items()]
     return "Weiter mit aktuellen Einstellungen:\n" + "\n".join(lines)
