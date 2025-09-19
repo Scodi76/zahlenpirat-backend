@@ -186,6 +186,29 @@ def get_effective_settings(session_id: str) -> Dict[str, Dict[str, str]]:
         "persistent": persistent_norm,
     }
 
+def format_session_summary(state: SessionState) -> str:
+    stats = state.session_stats
+    richtig = stats.get("aufgabenGeloest", 0)
+    gesamt = stats.get("aufgabenGesamt", 0)
+    punkte = stats.get("punkte", 0)
+
+    if gesamt == 0:
+        return f"📜 Noch keine Ergebnisse für {state.player_name or 'Anonymer Matrose'}."
+
+    falsch = gesamt - richtig
+    note = "1 (Sehr gut)" if richtig == 10 else \
+           "2 (Gut)" if richtig >= 8 else \
+           "3 (Befriedigend)" if richtig >= 6 else \
+           "4 (Ausreichend)" if richtig >= 4 else "5 (Ungenügend)"
+
+    return (
+        f"📜 Letzter Spielstand von {state.player_name or 'Anonymer Matrose'}:\n"
+        f"✅ Richtige Antworten: {richtig}\n"
+        f"❌ Falsche Antworten: {falsch}\n"
+        f"🏆 Gesamtpunkte: {punkte}\n"
+        f"📖 Note: {note}"
+    )
+
 
 # ======================
 # Ausgabe + Dialog
@@ -428,8 +451,10 @@ def handle_user_input(session_id: str, text: str) -> str:
         state.expected_answer = "12"
         return "Demo-Aufgabe: 7 + 5 = ?"
 
-    if low == "ahoi":
-        return f"⚔️ Erste Aufgabe: {_generate_task(state)}"
+    if low in {"ahoi", "start"}:
+        summary = format_session_summary(state)
+        return f"{summary}\n\n⚔️ Erste Aufgabe: {_generate_task(state)}"
+
 
     # Default → Einstellungen anzeigen
     merged = build_params_with_priority(None, state.session_standards, persistent)
