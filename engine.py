@@ -25,6 +25,15 @@ class SessionState:
     player_name: Optional[str] = None
 
 
+    # 📊 Session-Statistiken (immer vorhanden, Default-Werte)
+    session_stats: Dict[str, int] = field(default_factory=lambda: {
+        "aufgabenGesamt": 0,
+        "aufgabenGeloest": 0,
+        "punkte": 0
+    })
+
+
+
 # In-Memory-Sessionstore
 SESSIONS: Dict[str, SessionState] = {}
 
